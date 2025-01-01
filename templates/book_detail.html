@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ book.title }}</title>
+        <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+
+</head>
+<body>
+    <h1>{{ book.title }}</h1>
+    <h3>Auteur : {{ book.author }}</h3>
+    <p>{{ book.content }}</p>
+    <a href="{% url 'book_list' %}">Retour à la liste</a>
+</body>
+</html>
