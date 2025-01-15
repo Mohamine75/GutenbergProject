@@ -13,12 +13,13 @@ class Worldcities(models.Model):
         db_table = 'worldcities'
 
 
+
 class Book(models.Model):
-    gutenberg_id = models.IntegerField(unique=True)
-    title = models.CharField(max_length=255)
-    author = models.CharField(max_length=255, null=True, blank=True)
-    content = models.TextField()
+    id = models.IntegerField(primary_key=True)  # Colonne id
+    title = models.CharField(max_length=255)  # Colonne title
+    author = models.CharField(max_length=255, null=True, blank=True)  # Colonne author
+    content = models.TextField(null=True, blank=True)  # Colonne content
 
-    def __str__(self):
-        return f"{self.title} by {self.author or 'Unknown Author'}"
-
+    class Meta:
+        managed = False  # Désactive la gestion des migrations par Django
+        db_table = 'books'  # Nom de la table dans la base de données

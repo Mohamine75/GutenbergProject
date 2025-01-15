@@ -19,8 +19,13 @@ def book_list(request):
 def book_detail(request, book_id):
     """Affiche les détails d'un livre."""
     try:
-        book = Book.objects.get(gutenberg_id=book_id)
-        return render(request, 'book_detail.html', {'book': book})
+        book = Book.objects.get(id=book_id)
+
+        # Remplacer les doubles sauts de ligne par des balises <p>
+        paragraphs = book.content.split('\n\n')
+        formatted_content = ''.join([f'<p>{p.strip()}</p>' for p in paragraphs])
+
+        return render(request, 'book_detail.html', {'book': book, 'formatted_content': formatted_content})
     except Book.DoesNotExist:
         return render(request, '404.html', status=404)
 
