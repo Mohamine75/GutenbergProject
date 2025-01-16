@@ -27,6 +27,14 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+import os
+
+# Configuration pour les fichiers médias (covers)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'GutenbergApp/covers')
+
+# Configuration des fichiers statiques (si nécessaire)
+STATIC_URL = '/static/'
 
 # Application definition
 

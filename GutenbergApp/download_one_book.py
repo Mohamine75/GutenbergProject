@@ -28,6 +28,27 @@ def extract_rdf_data(rdf_file, folder_name):
         return None
 
 
+def initialize_database(db_name="books.db"):
+    """Initialise la base de données SQLite avec la table 'books'."""
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+
+    # Créer la table books si elle n'existe pas
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS books (
+        id INTEGER PRIMARY KEY,
+        title TEXT,
+        author TEXT,
+        content TEXT,
+        cover_path TEXT
+    )
+    """)
+    conn.commit()
+    conn.close()
+
+
+
+
 def download_book_content(book_id, max_words=10000):
     """Télécharge et nettoie le contenu d'un livre."""
     try:
@@ -70,7 +91,7 @@ def process_rdf_files(rdf_root_dir, covers_dir="covers", db_name="books.db"):
     """Traite les fichiers RDF et insère les données dans la base."""
     conn = sqlite3.connect(db_name)
 
-    for folder_number in range(1, 600):  # 1 à 1665 inclus
+    for folder_number in range(1, 603):  # 1 à 1665 inclus
         subdir_path = os.path.join(rdf_root_dir, str(folder_number))
         if os.path.isdir(subdir_path):
             rdf_file = next((f for f in os.listdir(subdir_path) if f.endswith(".rdf")), None)
@@ -92,6 +113,13 @@ def process_rdf_files(rdf_root_dir, covers_dir="covers", db_name="books.db"):
     print("Traitement terminé.")
 
 
+
 if __name__ == "__main__":
     rdf_root_dir = "books"  # Répertoire contenant les fichiers RDF
-    process_rdf_files(rdf_root_dir, covers_dir="covers", db_name="db.sqlite3")
+    db_name = "db.sqlite3"
+
+    # Initialiser la base de données
+    initialize_database(db_name)
+
+    # Traiter les fichiers RDF
+    process_rdf_files(rdf_root_dir, covers_dir="covers", db_name=db_name)

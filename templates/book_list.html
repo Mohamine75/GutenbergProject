@@ -1,20 +1,179 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>Liste des Livres</title>
-        <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projet Gutenberg Daar</title>
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #181a1b; /* Fond sombre */
+            color: #f5f5f5; /* Texte clair */
+            margin: 0;
+            padding: 0;
+        }
 
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #23272a;
+            color: #f5f5f5;
+            border-bottom: 2px solid #007bff;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+        }
+
+        .search-bar-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-bar-container input[type="text"] {
+            padding: 10px;
+            width: 250px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #2c2f33;
+            color: #fff;
+        }
+
+        .search-bar-container input[type="text"]::placeholder {
+            color: #bbb;
+        }
+
+        .search-bar-container button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .search-bar-container button:hover {
+            background-color: #0056b3;
+        }
+
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Colonnes dynamiques à partir de 200px */
+            gap: 20px; /* Espacement entre les cartes */
+            padding: 0; /* Retire le padding intérieur */
+            margin: 0; /* Retire les marges externes */
+            width: 100%; /* Permet d'occuper toute la largeur */
+            box-sizing: border-box; /* Assure que les paddings ne débordent pas */
+        }
+
+        .book-item {
+            text-align: center;
+            padding: 20px; /* Marges internes plus grandes */
+            border-radius: 8px;
+            background-color: #2c2f33;
+            color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .book-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .book-item img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+
+        .book-item a {
+            text-decoration: none;
+            color: #00bfff; /* Bleu clair */
+            font-weight: bold;
+            font-size: 1.1rem; /* Taille ajustée */
+        }
+
+        .book-item a:hover {
+            text-decoration: underline;
+        }
+
+        .book-item p {
+            margin: 10px 0 0;
+            font-size: 0.9rem;
+            color: #bbb;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #23272a;
+            color: #fff;
+            border-top: 1px solid #007bff;
+        }
+
+        footer a {
+            color: #00bfff;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .book-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2 colonnes sur petits écrans */
+            }
+
+            .search-bar-container input[type="text"] {
+                width: 180px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .book-grid {
+                grid-template-columns: 1fr; /* 1 colonne sur très petits écrans */
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Liste des Livres</h1>
-    <ul>
+    <header>
+        <h1>Projet Gutenberg Daar</h1>
+    </header>
+
+    <div class="search-bar-container">
+        <input type="text" placeholder="Recherche par titre" id="search-title">
+        <input type="text" placeholder="Recherche par auteur" id="search-author">
+        <input type="text" placeholder="Recherche par contenu" id="search-content">
+        <button>Rechercher</button>
+    </div>
+
+    <div class="book-grid">
         {% for book in books %}
-            <li>
-                <a href="{% url 'book_detail' book.gutenberg_id %}">
-                    {{ book.title }} - {{ book.author }}
+            <div class="book-item">
+                <a href="{% url 'book_detail' book.id %}">
+                    <img src="/media/{{ book.id }}.jpg" alt="Couverture de {{ book.title }}">
                 </a>
-            </li>
+                <a href="{% url 'book_detail' book.id %}">
+                    {{ book.title }}
+                </a>
+                <p>{{ book.author }}</p>
+            </div>
         {% endfor %}
-    </ul>
+    </div>
+
+    <footer>
+        <p>© 2025 ZEMALI Mohamed & SANTONI Thomas</p>
+        <a href="https://github.com/Mohamine75/GutenbergProject" target="_blank">Voir le projet sur GitHub</a>
+    </footer>
 </body>
 </html>
