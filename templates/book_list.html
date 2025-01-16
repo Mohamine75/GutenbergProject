@@ -150,26 +150,34 @@
         <h1>Projet Gutenberg Daar</h1>
     </header>
 
-    <div class="search-bar-container">
-        <input type="text" placeholder="Recherche par titre" id="search-title">
-        <input type="text" placeholder="Recherche par auteur" id="search-author">
-        <input type="text" placeholder="Recherche par contenu" id="search-content">
-        <button>Rechercher</button>
-    </div>
+<div class="search-bar-container">
+    <form action="{% url 'search_books' %}" method="get">
+        <input type="text" name="search-simple" placeholder="Recherche Simple" id="search-simple">
+        <button type="submit">Rechercher</button>
+    </form>
+</div>
 
-    <div class="book-grid">
-        {% for book in books %}
-            <div class="book-item">
-                <a href="{% url 'book_detail' book.id %}">
-                    <img src="/media/{{ book.id }}.jpg" alt="Couverture de {{ book.title }}">
-                </a>
-                <a href="{% url 'book_detail' book.id %}">
-                    {{ book.title }}
-                </a>
-                <p>{{ book.author }}</p>
-            </div>
-        {% endfor %}
+{% if message %}
+    <div class="search-message">
+        <p>{{ message }}</p>
     </div>
+{% endif %}
+
+<div class="book-grid">
+    {% for book in books %}
+        <div class="book-item">
+            <a href="{% url 'book_detail' book.id %}">
+                <img src="/media/{{ book.id }}.jpg" alt="Couverture de {{ book.title }}">
+            </a>
+            <a href="{% url 'book_detail' book.id %}">
+                {{ book.title }}
+            </a>
+            <p>{{ book.author }}</p>
+        </div>
+    {% endfor %}
+</div>
+
+
 
     <footer>
         <p>© 2025 ZEMALI Mohamed & SANTONI Thomas</p>

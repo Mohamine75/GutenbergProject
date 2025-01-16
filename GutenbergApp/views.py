@@ -29,6 +29,22 @@ def book_detail(request, book_id):
     except Book.DoesNotExist:
         return render(request, '404.html', status=404)
 
+
+
+
+def search_books(request):
+    """Recherche les livres contenant exactement le mot donné."""
+    query = request.GET.get('search-simple', '').strip()
+    books = []
+    message = ""
+    if query:
+        # Utilise regex pour chercher le mot exact (avec word boundaries \b)
+        books = Book.objects.filter(content__regex=r'\b' + query + r'\b')
+        count = books.count()
+        message = f"{count} livre(s) correspondent !" if count > 0 else "Aucun livre ne correspond !"
+        print(books)
+    return render(request, 'book_list.html', {'books': books, 'message': message})
+
 def temp_somwhere(request):
     random_item = Worldcities.objects.all().order_by('?').first()
     city = random_item.city
