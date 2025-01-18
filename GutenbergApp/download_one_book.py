@@ -37,9 +37,9 @@ def initialize_database(db_name="books.db"):
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS books (
         id INTEGER PRIMARY KEY,
-        title TEXT,
+        title TEXT UNIQUE,
         author TEXT,
-        content TEXT,
+        content TEXT UNIQUE,
         cover_path TEXT
     )
     """)
@@ -90,6 +90,11 @@ def insert_or_update_book_with_image_path(conn, book_id, title, author, content,
 def process_rdf_files(rdf_root_dir, covers_dir="covers", db_name="books.db"):
     """Traite les fichiers RDF et insère les données dans la base."""
     conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    
+    # Vider la table word_count
+    print("Nettoyage de la table books...")
+    cursor.execute("DELETE FROM books")
 
     for folder_number in range(1, 603):  # 1 à 1665 inclus
         subdir_path = os.path.join(rdf_root_dir, str(folder_number))
@@ -114,6 +119,51 @@ def process_rdf_files(rdf_root_dir, covers_dir="covers", db_name="books.db"):
 
 
 
+def detect_and_remove_duplicates(db_name):
+    """Détecte et supprime les doublons dans la table books."""
+    print("\nRecherche et suppression des doublons...")
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT id, title FROM books")
+    books = cursor.fetchall()
+    
+    # Préparer un dictionnaire avec les titres normalisés comme clés
+    normalized_titles = {}
+    for book_id, title in books:
+        normalized = ' '.join(title.lower().replace(',', ' ').replace('.', ' ').split())
+        if normalized in normalized_titles:
+            normalized_titles[normalized].append((book_id, title))
+        else:
+            normalized_titles[normalized] = [(book_id, title)]
+    
+    # Supprimer les doublons
+    duplicates_found = False
+    for normalized, book_list in normalized_titles.items():
+        if len(book_list) > 1:
+            duplicates_found = True
+            print("\nDoublons détectés:")
+            
+            # Trier par ID et garder le plus petit (le plus ancien)
+            book_list.sort(key=lambda x: x[0])
+            kept_book = book_list[0]
+            books_to_delete = book_list[1:]
+            
+            print(f"Conservé: ID {kept_book[0]} - {kept_book[1]}")
+            print("Supprimés:")
+            
+            for book_id, title in books_to_delete:
+                print(f"ID {book_id} - {title}")
+                cursor.execute("DELETE FROM books WHERE id = ?", (book_id,))
+    
+    if duplicates_found:
+        conn.commit()
+        print("\nSuppression des doublons terminée.")
+    else:
+        print("Aucun doublon trouvé.")
+    
+    conn.close()
+
 if __name__ == "__main__":
     rdf_root_dir = "books"  # Répertoire contenant les fichiers RDF
     db_name = "db.sqlite3"
@@ -123,3 +173,6 @@ if __name__ == "__main__":
 
     # Traiter les fichiers RDF
     process_rdf_files(rdf_root_dir, covers_dir="covers", db_name=db_name)
+    
+    # Détecter et supprimer les doublons
+    detect_and_remove_duplicates(db_name)

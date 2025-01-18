@@ -36,13 +36,17 @@ def count_words(text, banwords):
     """Compte les occurrences des mots dans un texte, en ignorant les mots interdits."""
     # Nettoyer le texte (enlever la ponctuation et convertir en minuscule)
     words = re.findall(r'\b\w+\b', text.lower())
-    filtered_words = [word for word in words if word not in banwords]
+    filtered_words = [word.strip() for word in words if word not in banwords and not (word.isdigit()) and len(word) > 2]
     return Counter(filtered_words)
 
 # Étape 4 : Remplir la table word_count
 def populate_word_count_table(conn, banwords):
     """Parcourt les livres et remplit la table word_count."""
     cursor = conn.cursor()
+
+    # Vider la table word_count
+    print("Nettoyage de la table word_count...")
+    cursor.execute("DELETE FROM word_count")
 
     # Charger les livres depuis la table books
     cursor.execute("SELECT id, content FROM books")
@@ -65,7 +69,7 @@ def populate_word_count_table(conn, banwords):
 
 # Étape 5 : Script principal
 if __name__ == "__main__":
-    db_name = os.path.join("E:/Daar/GutenbergProject", "db.sqlite3")
+    db_name = os.path.join("./", "db.sqlite3")
     conn = initialize_word_count_table(db_name)
 
     # Charger les mots interdits
