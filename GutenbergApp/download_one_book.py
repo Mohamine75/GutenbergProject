@@ -55,6 +55,27 @@ def download_book_content(book_id, max_words=10000):
         raw_book = get_text_by_id(book_id)
         clean_book = strip_headers(raw_book)
         text = clean_book.decode("utf-8").strip()
+        
+        # Chercher la fin du livre (différentes variantes possibles)
+        end_markers = [
+            "*** END OF THE PROJECT GUTENBERG EBOOK",
+            "*** END OF THIS PROJECT GUTENBERG EBOOK",
+            "***END OF THE PROJECT GUTENBERG EBOOK",
+            "End of the Project Gutenberg EBook",
+            "End of Project Gutenberg's"
+        ]
+        
+        # Trouver la première occurrence d'un marqueur de fin
+        end_index = len(text)
+        for marker in end_markers:
+            pos = text.find(marker)
+            if pos != -1 and pos < end_index:
+                end_index = pos
+        
+        # Tronquer le texte à la marque de fin
+        text = text[:end_index].strip()
+        
+        # Limiter le nombre de mots si nécessaire
         words = text.split()
         truncated_text = ' '.join(words[:max_words])
         return truncated_text
@@ -87,6 +108,16 @@ def insert_or_update_book_with_image_path(conn, book_id, title, author, content,
         print(f"Erreur lors de l'insertion ou de la mise à jour : {e}")
 
 
+
+def is_valid_book_content(content):
+    """Vérifie si le contenu du livre est valide selon nos critères."""
+    if not content:
+        return False
+        
+    # Vérifier si le livre commence par le texte non désiré
+    unwanted_start = "501(c)(3)"
+    return not content.strip().contains(unwanted_start)
+
 def process_rdf_files(rdf_root_dir, covers_dir="covers", db_name="books.db"):
     """Traite les fichiers RDF et insère les données dans la base."""
     conn = sqlite3.connect(db_name)
@@ -95,6 +126,9 @@ def process_rdf_files(rdf_root_dir, covers_dir="covers", db_name="books.db"):
     # Vider la table word_count
     print("Nettoyage de la table books...")
     cursor.execute("DELETE FROM books")
+    
+    total_books = 0
+    skipped_books = 0
 
     for folder_number in range(1, 603):  # 1 à 1665 inclus
         subdir_path = os.path.join(rdf_root_dir, str(folder_number))
@@ -105,17 +139,24 @@ def process_rdf_files(rdf_root_dir, covers_dir="covers", db_name="books.db"):
                 data = extract_rdf_data(rdf_path, str(folder_number))
                 if data:
                     book_id, title, author = data
-                    print(f"Traitement du livre ID {book_id} : {title} par {author}")
-
                     content = download_book_content(book_id, max_words=10000)
-                    if content:
+                    
+                    if content and is_valid_book_content(content):
+                        print(f"Traitement du livre ID {book_id} : {title} par {author}")
                         cover_path = os.path.join(covers_dir, f"{book_id}.jpg")
                         if not os.path.exists(cover_path):
                             cover_path = None  # Si la couverture est absente
                         insert_or_update_book_with_image_path(conn, book_id, title, author, content, cover_path)
+                        total_books += 1
+                    else:
+                        print(f"Livre ignoré ID {book_id} : {title} (contenu non valide)")
+                        skipped_books += 1
+
+    print(f"\nTraitement terminé.")
+    print(f"Total des livres traités avec succès : {total_books}")
+    print(f"Livres ignorés : {skipped_books}")
 
     conn.close()
-    print("Traitement terminé.")
 
 
 

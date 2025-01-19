@@ -8,6 +8,9 @@ cursor = conn.cursor()
 with open("books.json", "r", encoding="utf-8") as f:
     books = json.load(f)
 
+print("Nettoyage de la table books...")
+cursor.execute("DELETE FROM books")
+
 # Réinsérer dans la base
 cursor.executemany("INSERT INTO books (id, title, author,content,cover_path) VALUES (?, ?, ?,?,?)", [(b["id"], b["title"], b["author"],b["content"],b["cover_path"]) for b in books])
 conn.commit()
