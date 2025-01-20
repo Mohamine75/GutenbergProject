@@ -196,12 +196,41 @@ def detect_and_remove_duplicates(db_name):
             for book_id, title in books_to_delete:
                 print(f"ID {book_id} - {title}")
                 cursor.execute("DELETE FROM books WHERE id = ?", (book_id,))
+                cursor.execute("DELETE FROM word_count WHERE book_id = ?", (book_id,))
+                cursor.execute("DELETE FROM similarity_edges WHERE source_book_id = ?", (book_id,))
+                cursor.execute("DELETE FROM similarity_edges WHERE target_book_id = ?", (book_id,))
     
     if duplicates_found:
         conn.commit()
         print("\nSuppression des doublons terminée.")
     else:
         print("Aucun doublon trouvé.")
+    
+    conn.close()
+
+def remove_empty_books(db_name):
+    """Supprime les livres vides, dont le seul contenu est '501(c)(3)' (qui est le footer des livres gutenberg)."""
+    print("\nRecherche et suppression des livres 501(c)(3)...")
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    
+    # Recherche des livres à supprimer
+    cursor.execute("SELECT id, title, content FROM books WHERE content LIKE '501(c)(3)%'")
+    books_to_delete = cursor.fetchall()
+    
+    if books_to_delete:
+        print("\nLivres à supprimer:")
+        for book_id, title, _ in books_to_delete:
+            print(f"ID {book_id} - {title}")
+            cursor.execute("DELETE FROM books WHERE id = ?", (book_id,))
+            cursor.execute("DELETE FROM word_count WHERE book_id = ?", (book_id,))
+            cursor.execute("DELETE FROM similarity_edges WHERE source_book_id = ?", (book_id,))
+            cursor.execute("DELETE FROM similarity_edges WHERE target_book_id = ?", (book_id,))
+        
+        conn.commit()
+        print(f"\n{len(books_to_delete)} livre(s) supprimé(s).")
+    else:
+        print("Aucun livre commençant par '501(c)(3)' trouvé.")
     
     conn.close()
 
@@ -217,3 +246,4 @@ if __name__ == "__main__":
     
     # Détecter et supprimer les doublons
     detect_and_remove_duplicates(db_name)
+    remove_empty_books(db_name)

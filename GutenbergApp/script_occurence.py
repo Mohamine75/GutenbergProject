@@ -29,7 +29,7 @@ def initialize_word_count_table(db_name):
 # Étape 2 : Charger la liste de mots interdits
 def load_banwords():
     """Retourne une liste de mots à ignorer en utilisant NLTK."""
-    return set(stopwords.words('english'))  # Liste des stop words en anglais
+    return set(stopwords.words('english')) | set(stopwords.words('french'))  # Liste des stop words en anglais et français
 
 # Étape 3 : Compter les mots dans un texte
 def count_words(text, banwords):
