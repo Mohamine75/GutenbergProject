@@ -31,17 +31,17 @@ def book_detail(request, book_id):
 
 def search_books(request):
     """
-    Recherche les livres contenant le mot donné en utilisant un score combiné:
-    - 50% basé sur le closeness_score (centralité)
-    - 50% basé sur le nombre d'occurrences normalisé
+    Recherche les livres contenant le mot donné et suggère 2 livres similaires
+    pour chacun des 3 premiers résultats de recherche.
     """
     query = request.GET.get('search-simple', '').strip().lower()
-    books = []
+    search_results = []
+    suggestions = []
     message = ""
     
     if query:
-        # Requête SQL avec calcul du score combiné
-        books = Book.objects.raw('''
+        # Première requête pour les résultats de recherche directs
+        search_results = Book.objects.raw('''
             WITH max_occurrences AS (
                 SELECT MAX(occurrences) as max_occ
                 FROM word_count
@@ -61,11 +61,74 @@ def search_books(request):
             ORDER BY final_score DESC
         ''', [query, query])
         
-        count = len(list(books))
+        # Convertir en liste pour pouvoir compter et réutiliser
+        search_results = list(search_results)
+        count = len(search_results)
         message = f"{count} livre(s) correspondent ! Triés par score de pertinence." if count > 0 else "Aucun livre ne correspond !"
+
+        # Si on a des résultats, chercher des suggestions pour les 3 premiers
+        if count > 0:
+            # On prend les IDs des 3 premiers livres trouvés au maximum
+            top_book_ids = [book.id for book in search_results[:3]]
+            
+            # Construction de la chaîne de paramètres pour la clause IN
+            placeholders = ','.join(['%s'] * len(top_book_ids))
+            
+            # Deuxième requête pour les suggestions
+            query_params = top_book_ids + top_book_ids + top_book_ids + top_book_ids  # On a besoin des IDs 4 fois
+            
+            suggestions = Book.objects.raw(f'''
+                WITH RankedSimilarBooks AS (
+                    SELECT 
+                        source_book_id as origin_book_id,
+                        target_book_id as suggested_book_id,
+                        similarity_score,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY source_book_id 
+                            ORDER BY similarity_score DESC
+                        ) as rank
+                    FROM similarity_edges
+                    WHERE source_book_id IN ({placeholders})
+                    AND target_book_id NOT IN ({placeholders})
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        target_book_id as origin_book_id,
+                        source_book_id as suggested_book_id,
+                        similarity_score,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY target_book_id 
+                            ORDER BY similarity_score DESC
+                        ) as rank
+                    FROM similarity_edges
+                    WHERE target_book_id IN ({placeholders})
+                    AND source_book_id NOT IN ({placeholders})
+                )
+                SELECT 
+                    b.*,
+                    r.similarity_score,
+                    r.origin_book_id
+                FROM RankedSimilarBooks r
+                INNER JOIN books b ON b.id = r.suggested_book_id
+                WHERE rank <= 2
+                ORDER BY r.origin_book_id, r.similarity_score DESC
+            ''', query_params)
+            
+            suggestions = list(set(suggestions))
+
+                        # Fonction temporaire de debug
+            def debug_print_suggestions():
+                print("\n=== SUGGESTIONS DEBUG ===")
+                for sugg in suggestions:
+                    print(f"Pour le livre {sugg.origin_book_id} -> Suggestion: {sugg.title} (score: {sugg.similarity_score})")
+                print("========================\n")
+            
+            debug_print_suggestions()
     
     return render(request, 'book_list.html', {
-        'books': books, 
+        'books': search_results,
+        'suggestions': suggestions,
         'message': message,
         'query': query
     })
