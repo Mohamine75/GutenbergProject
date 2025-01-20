@@ -8,6 +8,7 @@ from django.template import loader
 from GutenbergApp.models import Worldcities,Book
 from django.shortcuts import render
 
+from .regex_search_impl import RegexSearcher
 
 # Create your views here.
 def book_list(request):
@@ -28,6 +29,68 @@ def book_detail(request, book_id):
         return render(request, 'book_detail.html', {'book': book, 'formatted_content': formatted_content})
     except Book.DoesNotExist:
         return render(request, '404.html', status=404)
+
+def simple_search(query):
+        # Première requête pour les résultats de recherche directs
+    search_results = Book.objects.raw('''
+        WITH max_occurrences AS (
+            SELECT MAX(occurrences) as max_occ
+            FROM word_count
+            WHERE word = %s
+        )
+        SELECT 
+            b.*, 
+            wc.occurrences,
+            cm.closeness_score,
+            (50 * cm.closeness_score + 50 * (CAST(wc.occurrences AS FLOAT) / 
+                CAST(max_occ AS FLOAT))) as final_score
+        FROM books b
+        INNER JOIN word_count wc ON b.id = wc.book_id
+        INNER JOIN centrality_measures cm ON b.id = cm.book_id
+        CROSS JOIN max_occurrences
+        WHERE wc.word = %s
+        ORDER BY final_score DESC
+    ''', [query, query])
+    
+    # Convertir en liste pour pouvoir compter et réutiliser
+    search_results = list(search_results)
+    count = len(search_results)
+    message = f"{count} livre(s) correspondent ! Triés par score de pertinence." if count > 0 else "Aucun livre ne correspond !"
+    return (search_results, count, message)
+
+def regex_search(query):
+    searcher = RegexSearcher()
+    
+    # Obtenir les résultats bruts (book_id, occurrences, closeness_score)
+    raw_results = searcher.search_pattern(query)
+    
+    if not raw_results:
+        return [], 0, "Aucun livre ne correspond !"
+        
+    # Calculer max_occurrences pour la normalisation
+    max_occurrences = max(occ for _, occ, _ in raw_results)
+    
+    # Créer la liste des livres avec leur score
+    search_results = []
+    for book_id, occurrences, closeness_score in raw_results:
+        book = Book.objects.get(id=book_id)
+        # Calcul du score final comme dans simple_search
+        normalized_occurrences = (occurrences / max_occurrences) if max_occurrences > 0 else 0
+        final_score = 50 * closeness_score + 50 * normalized_occurrences
+        
+        # Ajouter les attributs nécessaires à l'objet book
+        book.occurrences = occurrences
+        book.closeness_score = closeness_score
+        book.final_score = final_score
+        
+        search_results.append(book)
+    
+    # Trier par score final
+    search_results.sort(key=lambda x: x.final_score, reverse=True)
+    count = len(search_results)
+    message = f"{count} livre(s) correspondent ! Triés par score de pertinence."
+    
+    return search_results, count, message
 
 def search_books(request):
     """
@@ -61,10 +124,18 @@ def search_books(request):
             ORDER BY final_score DESC
         ''', [query, query])
         
+        if any(c in query for c in '*|+()'):
+            # Recherche avancée (regex)
+            print(query)
+            res = regex_search(query)
+        else:
+            # Simple recherche de mot
+            res = simple_search(query)
+
         # Convertir en liste pour pouvoir compter et réutiliser
-        search_results = list(search_results)
-        count = len(search_results)
-        message = f"{count} livre(s) correspondent ! Triés par score de pertinence." if count > 0 else "Aucun livre ne correspond !"
+        search_results = res[0]
+        count = res[1]
+        message = res[2]
 
         # Si on a des résultats, chercher des suggestions pour les 3 premiers
         if count > 0:
