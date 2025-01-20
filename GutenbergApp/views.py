@@ -29,21 +29,46 @@ def book_detail(request, book_id):
     except Book.DoesNotExist:
         return render(request, '404.html', status=404)
 
-
-
-
 def search_books(request):
-    """Recherche les livres contenant exactement le mot donné."""
-    query = request.GET.get('search-simple', '').strip()
+    """
+    Recherche les livres contenant le mot donné en utilisant un score combiné:
+    - 50% basé sur le closeness_score (centralité)
+    - 50% basé sur le nombre d'occurrences normalisé
+    """
+    query = request.GET.get('search-simple', '').strip().lower()
     books = []
     message = ""
+    
     if query:
-        # Utilise regex pour chercher le mot exact (avec word boundaries \b)
-        books = Book.objects.filter(content__regex=r'\b' + query + r'\b')
-        count = books.count()
-        message = f"{count} livre(s) correspondent !" if count > 0 else "Aucun livre ne correspond !"
-        print(books)
-    return render(request, 'book_list.html', {'books': books, 'message': message})
+        # Requête SQL avec calcul du score combiné
+        books = Book.objects.raw('''
+            WITH max_occurrences AS (
+                SELECT MAX(occurrences) as max_occ
+                FROM word_count
+                WHERE word = %s
+            )
+            SELECT 
+                b.*, 
+                wc.occurrences,
+                cm.closeness_score,
+                (50 * cm.closeness_score + 50 * (CAST(wc.occurrences AS FLOAT) / 
+                    CAST(max_occ AS FLOAT))) as final_score
+            FROM books b
+            INNER JOIN word_count wc ON b.id = wc.book_id
+            INNER JOIN centrality_measures cm ON b.id = cm.book_id
+            CROSS JOIN max_occurrences
+            WHERE wc.word = %s
+            ORDER BY final_score DESC
+        ''', [query, query])
+        
+        count = len(list(books))
+        message = f"{count} livre(s) correspondent ! Triés par score de pertinence." if count > 0 else "Aucun livre ne correspond !"
+    
+    return render(request, 'book_list.html', {
+        'books': books, 
+        'message': message,
+        'query': query
+    })
 
 def temp_somwhere(request):
     random_item = Worldcities.objects.all().order_by('?').first()
