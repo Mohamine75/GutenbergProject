@@ -142,6 +142,71 @@
             .book-grid {
                 grid-template-columns: 1fr; /* 1 colonne sur très petits écrans */
             }
+
+        .suggestions-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #23272a;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+
+        .suggestions-header {
+            color: #f5f5f5;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            padding-left: 10px;
+        }
+
+        .suggestions-group {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #2c2f33;
+            border-radius: 6px;
+        }
+
+        .suggestions-group-title {
+            color: #00bfff;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            border-bottom: 1px solid #3d4144;
+            padding-bottom: 8px;
+        }
+
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .suggestion-item {
+            padding: 10px;
+            background-color: #32363a;
+            border-radius: 6px;
+            transition: transform 0.2s;
+        }
+
+        .suggestion-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .suggestion-score {
+            font-size: 0.8rem;
+            color: #7289da;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .suggestions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .suggestions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
         }
     </style>
 </head>
@@ -177,7 +242,24 @@
     {% endfor %}
 </div>
 
-
+{% if suggestions %}
+    <div class="suggestions-section">
+        <h3 class="suggestions-header">Suggestions</h3>
+        <div class="book-grid">
+            {% for suggestion in suggestions %}
+                <div class="book-item">
+                    <a href="{% url 'book_detail' suggestion.id %}">
+                        <img src="/media/{{ suggestion.id }}.jpg" alt="Couverture de {{ suggestion.title }}">
+                    </a>
+                    <a href="{% url 'book_detail' suggestion.id %}">
+                        {{ suggestion.title }}
+                    </a>
+                    <p>{{ suggestion.author }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
 
     <footer>
         <p>© 2025 ZEMALI Mohamed & SANTONI Thomas</p>

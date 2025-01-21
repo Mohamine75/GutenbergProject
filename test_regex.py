@@ -31,7 +31,8 @@ def test_regex_patterns(db_path: str = 'db.sqlite3') -> None:
         ("micro.*ic", "Mots commençant par 'micro' et finissant par 'ic'"),
         (".*graph.*y", "Mots contenant 'graph' et finissant par 'y'"),
         ("psych.*ist", "Mots commençant par 'psych' et finissant par 'ist'"),
-        (".*ops", "Mots finissant par 'ops'")
+        (".*ops", "Mots finissant par 'ops'"),
+        ("(sea|sun)$", "sea ou sun")
     ]
 
     conn = sqlite3.connect(db_path)
