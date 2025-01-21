@@ -181,36 +181,26 @@ class DeterministicAutomaton:
         return minimized_dfa
 
     def match(self, text: str) -> bool:
-        """Vérifie si le texte est reconnu par l'automate"""
+        """Vérifie si le texte correspond au pattern de l'automate"""
         current_state = 0
         
-        # Pour chaque préfixe du texte
+        # Pour chaque caractère du texte
         for i in range(len(text)):
             symbol = ord(text[i])
             next_state = self.get_transition(current_state, symbol)
+            
+            # Si pas de transition possible, le mot ne correspond pas
             if next_state is None:
                 return False
+                
             current_state = next_state
             
-            # Si on est dans un état acceptant, on vérifie si le reste du texte 
-            # peut être consommé avec les transitions en boucle
+            # Si on est dans un état acceptant, le mot correspond
+            # car on a trouvé un préfixe valide
             if current_state in self.accepting_states:
-                # Vérifier si les caractères restants peuvent être consommés
-                remaining_state = current_state
-                valid = True
-                for j in range(i + 1, len(text)):
-                    symbol = ord(text[j])
-                    next_state = self.get_transition(remaining_state, symbol)
-                    if next_state is None:
-                        valid = False
-                        break
-                    if next_state not in self.accepting_states:
-                        valid = False
-                        break
-                    remaining_state = next_state
-                if valid:
-                    return True
-        
+                return True
+                
+        # Le mot est valide seulement si on termine dans un état acceptant
         return current_state in self.accepting_states
 
     def __str__(self) -> str:
