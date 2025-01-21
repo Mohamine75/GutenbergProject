@@ -1,7 +1,7 @@
 from typing import List, Set, Dict
 from dataclasses import dataclass, field
 from collections import deque
-from .regex_tree import RegExTree, ALTERN, CONCAT, ETOILE
+from .regex_tree import RegExTree, ALTERN, CONCAT, ETOILE, DOT
 
 @dataclass
 class NonDeterministicAutomaton:
@@ -42,7 +42,15 @@ class NonDeterministicAutomaton:
     @staticmethod
     def create_simple_automaton(input_symbol: int) -> 'NonDeterministicAutomaton':
         automaton = NonDeterministicAutomaton(2)
-        automaton.add_transition(0, 1, input_symbol)
+        
+        if input_symbol == DOT:
+            # Pour le point, on crée une transition pour chaque caractère possible
+            # On considère les caractères ASCII imprimables (32-126)
+            for ascii_val in range(32, 127):
+                automaton.add_transition(0, 1, ascii_val)
+        else:
+            automaton.add_transition(0, 1, input_symbol)
+            
         automaton.accepting_states.add(1)
         return automaton
 

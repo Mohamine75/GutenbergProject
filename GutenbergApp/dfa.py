@@ -181,7 +181,7 @@ class DeterministicAutomaton:
         return minimized_dfa
 
     def match(self, text: str) -> bool:
-        """Vérifie si le texte correspond au pattern de l'automate"""
+        """Vérifie si le texte correspond entièrement au pattern de l'automate"""
         current_state = 0
         
         # Pour chaque caractère du texte
@@ -194,13 +194,9 @@ class DeterministicAutomaton:
                 return False
                 
             current_state = next_state
-            
-            # Si on est dans un état acceptant, le mot correspond
-            # car on a trouvé un préfixe valide
-            if current_state in self.accepting_states:
-                return True
-                
+        
         # Le mot est valide seulement si on termine dans un état acceptant
+        # ET qu'on a consommé tout le mot
         return current_state in self.accepting_states
 
     def __str__(self) -> str:

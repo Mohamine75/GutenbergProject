@@ -36,7 +36,7 @@ def count_words(text, banwords):
     """Compte les occurrences des mots dans un texte, en ignorant les mots interdits."""
     # Nettoyer le texte (enlever la ponctuation et convertir en minuscule)
     words = re.findall(r'\b\w+\b', text.lower())
-    filtered_words = [word.strip() for word in words if word not in banwords and not (word.isdigit()) and len(word) > 2]
+    filtered_words = [(word.strip()).replace('_', '') for word in words if word not in banwords and not (word.isdigit()) and len((word.strip()).replace('_', '')) > 2]
     return Counter(filtered_words)
 
 # Étape 4 : Remplir la table word_count
