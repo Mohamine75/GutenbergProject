@@ -1,7 +1,7 @@
 import sqlite3
 import os
 import numpy as np
-import networkx as nx
+from collections import deque
 from typing import List, Tuple, Dict
 
 # Configuration globale
@@ -81,13 +81,44 @@ class BookSimilarityAnalyzer:
             
         return book_words
 
+    def shortest_path_lengths(self, matrix: np.ndarray, start: int) -> Dict[int, float]:
+        n = len(matrix)
+        distances = {i: float('inf') for i in range(n)}
+        distances[start] = 0
+        queue = deque([start])
+        visited = {start}
+        while queue:
+            current = queue.popleft()
+            for neighbor in range(n):
+                if matrix[current][neighbor] > 0 and neighbor not in visited:
+                    distances[neighbor] = distances[current] + 1
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+        return distances
+
+    def calculate_closeness_centrality(self, similarity_matrix: np.ndarray) -> Dict[int, float]:
+        n = len(similarity_matrix)
+        closeness_scores = {}
+        
+        for node in range(n):
+            distances = self.shortest_path_lengths(similarity_matrix, node)
+            # Filter out unreachable nodes
+            reachable_distances = [d for d in distances.values() if d != float('inf')]
+            if reachable_distances:
+                # n-1 to exclude the node itself
+                closeness = (len(reachable_distances) - 1) / sum(reachable_distances)
+            else:
+                closeness = 0.0
+            closeness_scores[node] = closeness
+            
+        return closeness_scores
+
     def calculate_similarities(self):
         """Calcule et stocke les similarités de Jaccard entre tous les livres."""
         book_words = self.get_top_words_by_book()
         book_ids = list(book_words.keys())
         n_books = len(book_ids)
         
-        # Matrice de similarité pour NetworkX
         similarity_matrix = np.zeros((n_books, n_books))
         
         cursor = self.conn.cursor()
@@ -102,7 +133,7 @@ class BookSimilarityAnalyzer:
                     union = len(words1 | words2)
                     similarity = intersection / union if union > 0 else 0
                     
-                    # Stockage dans la matrice pour NetworkX
+                    # Stockage dans la matrice
                     similarity_matrix[i][j] = similarity
                     
                     # Stockage dans la base de données
@@ -116,8 +147,7 @@ class BookSimilarityAnalyzer:
         self.conn.commit()
         
         # Calcul de la centralité closeness
-        G = nx.from_numpy_array(similarity_matrix)
-        closeness_scores = nx.closeness_centrality(G)
+        closeness_scores = self.calculate_closeness_centrality(similarity_matrix)
         
         # Stockage des scores de centralité
         for i, book_id in enumerate(book_ids):
