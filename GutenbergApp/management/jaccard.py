@@ -6,6 +6,7 @@ from typing import List, Tuple, Dict
 
 # Configuration globale
 TOP_WORDS_COUNT = 100 # Nombre de mots pris en compte pour les similarités de Jaccard
+SIMILARITY_THRESHOLD = 0.1
 
 class BookSimilarityAnalyzer:
     def __init__(self, db_path: str):
@@ -105,11 +106,12 @@ class BookSimilarityAnalyzer:
                     similarity_matrix[i][j] = similarity
                     
                     # Stockage dans la base de données
-                    cursor.execute("""
-                    INSERT OR REPLACE INTO similarity_edges 
-                    (source_book_id, target_book_id, similarity_score)
-                    VALUES (?, ?, ?)
-                    """, (book1_id, book2_id, similarity))
+                    if similarity >= SIMILARITY_THRESHOLD:
+                        cursor.execute("""
+                        INSERT OR REPLACE INTO similarity_edges 
+                        (source_book_id, target_book_id, similarity_score)
+                        VALUES (?, ?, ?)
+                        """, (book1_id, book2_id, similarity))
         
         self.conn.commit()
         
